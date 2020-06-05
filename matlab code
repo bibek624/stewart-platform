@@ -1,0 +1,286 @@
+%% stewart dimensions
+radius_base = 30;
+radius_platform = 25;
+
+height_platform = 35;
+length_connecting_rod = 48;
+length_horn = 20;
+
+% angle between adjacent motors
+ang_shafts_base = 90;
+ang_shafts_base = ang_shafts_base/2;
+
+%angle between adjacent platform joints;
+ang_shafts_platform = 30;
+ang_shafts_platform = ang_shafts_platform/2;
+
+%% angular position of motors (wrt normal)
+ang_pos_base = [ang_shafts_base;
+           120-ang_shafts_base;
+           120+ang_shafts_base;
+           240-ang_shafts_base;
+           240+ang_shafts_base;
+           -ang_shafts_base];
+       
+ang_pos_base = deg2rad(ang_pos_base); %converting into radian
+
+%% angular position of platform joints (wrt normal)
+ang_pos_platform = [60-ang_shafts_platform;
+                    60+ang_shafts_platform;
+                    180-ang_shafts_platform;
+                    180+ang_shafts_platform;
+                   -(60+ang_shafts_platform);
+                   -(60-ang_shafts_platform)];
+
+ang_pos_platform = deg2rad(ang_pos_platform); %converting into radian
+
+%% coordinates of motor ends and platform
+
+points_base = zeros(6,3); %motor
+points_platform_org = zeros(6,3); %platform joints
+
+points_base(:,1) = radius_base * sin(ang_pos_base);
+points_base(:,2) = radius_base * cos(ang_pos_base);
+points_base(:,3) = 0;
+
+points_platform_org(:,1) = radius_platform * sin(ang_pos_platform);
+points_platform_org(:,2) = radius_platform * cos(ang_pos_platform);
+points_platform_org(:,3) = height_platform;
+
+%% orientation of motor wrt x axis
+% ang_pos_base = rad2deg(ang_pos_base);
+
+% bita = [-ang_pos_base(1);
+%         180-ang_pos_base(2);
+%         360-ang_pos_base(3);
+%         180-ang_pos_base(4);
+%         360-ang_pos_base(5);
+%         180-ang_pos_base(6)];
+    
+
+bita = [90 45 0 180 180 90];
+bita = deg2rad(bita);
+
+     
+     
+
+%% initial plotting
+
+figure(1);
+clf;
+
+
+% zlabel('Height (cm)');
+
+
+
+
+
+base_color = 'g';
+platform_color = 'r';
+
+rod_color = 'b';
+rod_width = 2;
+
+horn_color = 'm';
+horn_width = 2;
+
+% base 
+pat_base = patch([points_base(:,1)' points_base(1,1)], ...
+                 [points_base(:,2)' points_base(1,2)], ...
+                 [points_base(:,3)' points_base(1,3)],...
+                 base_color);
+             
+axis equal;
+ view(3);
+ hold on
+ grid on;
+ axis([-60 60 -55 45 -25 65]);
+set(gca,'position',[0.01   0.01 0.5 0.99]);
+plot_platform = gca;
+title('2072 Nepal-Earthquake Motion Simulation');
+xlabel('Easting (cm)');
+ylabel('Northing (cm)');
+
+% platform
+pat_platform = patch(nan, nan, nan,platform_color);
+h = zeros(1,6);
+r = zeros(1,6);
+
+for i = 1:6
+    % horn
+   h(i) = line(nan,nan,nan,'color',horn_color,'linew',horn_width);
+   
+   % rods
+   r(i) = line(nan,nan,nan,'color',rod_color,'linew',rod_width);
+end
+
+
+
+
+
+%% transformation parameters
+
+r_x = deg2rad(0); 
+r_y = deg2rad(0);
+r_z = deg2rad(0);
+
+R_x = [1     0          0    ;
+      0 cos(r_x)  -sin(r_x);
+      0 sin(r_x)   cos(r_x)];
+
+R_y = [cos(r_y)  0  sin(r_y);
+        0          1      0      ;
+      -sin(r_y) 0  cos(r_y)];
+  
+R_z = [cos(r_z) -sin(r_z) 0;
+      sin(r_z)  cos(r_z) 0;
+         0         0     1];
+     
+R = R_x * R_y * R_z; 
+
+sh = VideoWriter('Geq_animation7.avi');
+open(sh);
+
+s = 1/1.6;
+acn_east = mydiff(mydiff(pos_east_30)/0.03)/0.03;
+acn_north = mydiff(mydiff(pos_north_30)/0.03)/0.03;
+acn_up = mydiff(mydiff(pos_up_30)/0.03)/0.03;
+
+time = 0:0.03:length(pos_east_30)/30;
+time = time(1:length(acn_up));
+
+%% accleration plot
+plot_acn_east = subplot(322);
+
+
+plot_acn_north = subplot(324);
+
+
+plot_acn_up = subplot(326);
+
+
+
+p1 = plot(plot_acn_east,time,acn_east);
+title(plot_acn_east,'East-West acceleration');
+xlabel(plot_acn_east,'time(s)');
+ylabel(plot_acn_east,'accelration(cm/s\^2)')
+p2 = plot(plot_acn_north,time,acn_north);
+title(plot_acn_north,'North-South acceleration');
+xlabel(plot_acn_north,'time(s)');
+ylabel(plot_acn_north,'accelration(cm/s\^2)')
+p3 = plot(plot_acn_up,time,acn_up);
+title(plot_acn_up,'Up-Down acceleration');
+xlabel(plot_acn_up,'time(s)');
+ylabel(plot_acn_up,'accelration(cm/s\^2)')
+
+%%
+set(plot_acn_east,'xLim',[0 80],'yLim',[-12 12]);
+set(plot_acn_north,'xLim',[0 80],'yLim',[-12 15]);
+set(plot_acn_up,'xLim',[0 80],'yLim',[-12 12]);
+for k = 1:length(pos_east_30)
+
+trans_x = pos_east_30(k)/s;
+trans_y = pos_north_30(k)/s;
+trans_z = pos_up_30(k)*2.2;
+
+
+
+trans = [trans_x trans_y trans_z];
+
+
+
+set(p1,'XData',time(1:k),'yData',acn_east(1:k));
+set(p2,'XData',time(1:k),'yData',acn_north(1:k));
+set(p3,'XData',time(1:k),'yData',acn_up(1:k));
+%% calculation of transformed platform coordinates and alpha
+points_platform_trans = zeros(size(points_platform_org));
+connecting_length = zeros(1,6);
+
+alpha = zeros(1,6);
+
+x_horn = zeros(6,1);
+y_horn = zeros(6,1);
+z_horn = zeros(6,1);
+
+
+
+for i = 1:6
+ 
+   points_platform_trans(i,:) = trans' + R*points_platform_org(i,:)';   
+   connecting_length(i) = sqrt((points_platform_trans(i,1) - points_base(i,1))^2 ...
+                              +(points_platform_trans(i,2) - points_base(i,2))^2 ...
+                              +(points_platform_trans(i,3) - points_base(i,3))^2);
+   L = connecting_length(i)^2 + length_horn^2 - length_connecting_rod^2;
+   M = 2*length_horn* (points_platform_trans(i,3) - points_base(i,3));
+   N = 2*length_horn* (cos(bita(i)) * (points_platform_trans(i,1) - points_base(i,1)) ...
+       + sin(bita(i)) * (points_platform_trans(i,2) - points_base(1,2)));
+   
+   % horn angles
+   alpha(i) = asin(L / (sqrt(M^2 + N^2))) - atan(N/M);
+%     alpha(2) = pi/2;
+   % horn tip coordinates
+    x_horn(i) = length_horn * cos(alpha(i)) * cos(bita(i)) + points_base(i,1);
+    y_horn(i) = length_horn * cos(alpha(i)) * sin(bita(i)) + points_base(i,2);
+    z_horn(i) = length_horn * sin(alpha(i))  + points_base(i,3);
+
+end
+%alpha(alpha<0) = alpha(alpha<0)*-1
+
+
+
+%% plotting transformed data
+
+
+% upper platform
+patch_x = [points_platform_trans(:,1)' points_platform_trans(1,1)]';
+patch_y = [points_platform_trans(:,2)' points_platform_trans(1,2)]';
+patch_z = [points_platform_trans(:,3)' points_platform_trans(1,3)]';
+vertex =  [patch_x patch_y patch_z];
+  set(pat_platform,'Vertices', vertex,...
+      'XData',patch_x,...
+      'YData',patch_y,...
+      'ZData',patch_z);
+
+% horn and connecting rod
+for i = 1:6
+   
+    set(h(i),...
+        'XData',[points_base(i,1) eval(['x_horn(' num2str(i) ')'])], ...
+        'YData',[points_base(i,2) eval(['y_horn(' num2str(i) ')'])], ...
+        'ZData',[points_base(i,3) eval(['z_horn(' num2str(i) ')'])]);
+    
+    set(r(i),...
+        'XData',[points_platform_trans(i,1) eval(['x_horn(' num2str(i) ')'])],...
+        'YData',[points_platform_trans(i,2) eval(['y_horn(' num2str(i) ')'])],...
+        'ZData',[points_platform_trans(i,3) eval(['z_horn(' num2str(i) ')'])]);
+    
+end
+
+% p11 = plot3(plot_platform,x_horn,y_horn,z_horn,'bo','MarkerFaceColor','g');
+% p22 = plot3(plot_platform,points_base(:,1), points_base(:,2),points_base(:,3),'bo','MarkerFaceColor','y');
+% p33 = plot3(plot_platform,points_platform_trans(:,1),points_platform_trans(:,2),points_platform_trans(:,3),'bo','MarkerFaceColor','g');
+
+
+
+% pause(0.0001);
+writeVideo(sh,getframe(gcf));
+%  
+% delete(p11);
+% delete(p22);
+% delete(p33);
+
+end
+close(sh);
+
+
+
+   
+   
+
+   
+
+
+
+
+       
